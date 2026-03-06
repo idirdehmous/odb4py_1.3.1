@@ -8,15 +8,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <time.h>
+#include <sched.h>
 
 
 
-
-// Check file exists
-/*static int  file_exists(  const char *path ) {
-struct stat st  ;   
-return ( stat( path , &st ) ==  0 && S_ISREG(st.st_mode))  ;
-}*/
 
 
 // Check dir exists 
@@ -50,6 +45,39 @@ static int valid_odb_path(const char *path)
 
     return 0;
 }
+
+
+
+
+
+
+int get_available_cpus(void)
+{   
+    // If the script is in a SLURM env  
+    char *env;
+    env = getenv("SLURM_CPUS_PER_TASK");
+    if (env && atoi(env) > 0)
+        return atoi(env);
+
+    cpu_set_t set;
+    if (sched_getaffinity(0, sizeof(set), &set) == 0) {
+        int n = CPU_COUNT(&set);
+        if (n > 0)
+            return n;
+    }
+
+    // Get available cpus 
+    long ncpu = sysconf(_SC_NPROCESSORS_ONLN);
+    if (ncpu < 1)
+        ncpu = 1;
+
+    return (int)ncpu;
+}
+
+
+
+
+
 
 
 /*static int dca_files_exist(const char *dbpath       ,
@@ -86,14 +114,20 @@ static int valid_odb_path(const char *path)
 
 
 
+
+
+
 // odbDca Python method      
 static PyObject * odbDca_method(PyObject *Py_UNUSED(self), PyObject *args, PyObject *kwargs)
 {
     const char *dbpath = NULL;
     const char *dbtype = NULL;
     const char *extra  = NULL;
-    PyObject *tables = NULL;
     int ncpu = 1;
+
+
+    PyObject *tables   = Py_None  ;
+    PyObject *verbose  = Py_None  ;
 
     static char *kwlist[] = {
         "odbdir",
@@ -101,20 +135,31 @@ static PyObject * odbDca_method(PyObject *Py_UNUSED(self), PyObject *args, PyObj
         "tables",
         "ncpu"  , 
         "extra_args",
+	"verbose", 
          NULL
     };
 
     // Check args  
-    if (!PyArg_ParseTupleAndKeywords( args, kwargs, "ss|Ois", kwlist ,
+    if (!PyArg_ParseTupleAndKeywords( args, kwargs, "ss|OisO", kwlist ,
                                                              &dbpath ,
                                                              &dbtype ,
 							     &tables ,
                                                              &ncpu,
-                                                             &extra))
+                                                             &extra, 
+							     &verbose ))
     {
         return PyLong_FromLong(-1);
     }
 
+
+
+     // no verbosity  (default )  
+     Bool      lverb        = false    ;
+     if (verbose && PyObject_IsTrue(verbose)) {
+        lverb = true;
+      } else {
+        lverb = false;
+       }
 
 
     // Check odb path 
@@ -125,10 +170,11 @@ static PyObject * odbDca_method(PyObject *Py_UNUSED(self), PyObject *args, PyObj
      }
 
   
-    // Set number of  CPUs   ( if negative value or not using all system  ressource  , take  _SC_NPROCESSORS_ONLN) 
-    if (ncpu < 0   ||  ncpu < sysconf(_SC_NPROCESSORS_ONLN)) { 
-      ncpu  =  _SC_NPROCESSORS_ONLN ; 
-    }   
+    // Set number of  CPUs   ( if negative value or get the max number of CPUs ) 
+     int maxcpu = get_available_cpus();
+
+     if (ncpu <= 0 || ncpu > maxcpu)
+          ncpu = maxcpu;
 
     // dca path  
     char dca_dir[4096];
@@ -154,6 +200,8 @@ static PyObject * odbDca_method(PyObject *Py_UNUSED(self), PyObject *args, PyObj
     snprintf(cpu_str, sizeof(cpu_str), "%d", ncpu);
     snprintf(cmd, sizeof(cmd), "%s/dcagen -i '%s' -N %s -q -z -P", bebin, dbpath, cpu_str);
 
+
+
     if (extra && strlen(extra) > 0) {
         strncat(cmd, " ", sizeof(cmd)-strlen(cmd)-1);
         strncat(cmd, extra, sizeof(cmd)-strlen(cmd)-1);
@@ -168,9 +216,10 @@ if (tables && !PySequence_Check(tables)) {
 
 // Create dca files only for the table found in the pool (ONLY !) 
 // It processes some tables instead of  386 ones  !!
-if ( tables &&  PySequence_Check(tables)) {
-    Py_ssize_t n = PyList_Size(tables);
-    for (Py_ssize_t i = 0; i < n; ++i) {
+Py_ssize_t ntab = 0 ; 
+if ( tables != Py_None  &&  PySequence_Check(tables)) {
+    ntab = PyList_Size(tables);
+    for (Py_ssize_t i = 0; i < ntab ; ++i) {
         PyObject *item = PyList_GetItem(tables, i); // borrowed ref
         if (!PyUnicode_Check(item))
             continue;
@@ -181,14 +230,30 @@ if ( tables &&  PySequence_Check(tables)) {
     }
 }
 
-   
+
     printf("--odb4py : Creating DCA files...\n");
-    // Execute dcagen                                    
+
+    if (lverb) {
+    printf( "%s : %s\n"  , "--odb4py : ODB_FEBINPATH is set to " ,bebin  ) ;
+    printf(  "--odb4py : dcagen runs with the command : %s\n", cmd ) ;   
+
+    printf("%s\n"   , "--odb4py : The dca file will be created for the table :") ;
+        for (Py_ssize_t i = 0; i < ntab ; ++i) {
+        PyObject *item = PyList_GetItem(tables, i); // borrowed ref
+        if (!PyUnicode_Check(item))
+            continue;
+
+        const char *tname = PyUnicode_AsUTF8(item);
+	printf( "%s.%s\n"  , tname, "dca"  ) ; 
+    }
+
+    }
+    
+    // Run dcagen  (child process  , Global Python Lock 'GIL' has to be unlocked )
     int status= -1;
 
     // Unlock python GIL for another process 
     Py_BEGIN_ALLOW_THREADS
-
 
     // Path
     // Can't be seen by the children processes  
@@ -221,4 +286,3 @@ if ( tables &&  PySequence_Check(tables)) {
 
     }
 }
-
