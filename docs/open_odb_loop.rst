@@ -6,8 +6,7 @@ analysis over a sequence of dates or time periods. In such workflows,
 looping over dates is therefore a common and necessary practice.
 
 During these iterations, both the database path and the associated date
-must be updated at each step. If this is not done correctly, odb4py
-may continue to operate on the first opened ODB database. As a result,
+must be updated at each step. If this is not done correctly, **odb4py may continue to operate on the first opened ODB database**. As a result,
 identical rows and values may be returned even though the loop variable
 (e.g. the date) changes.
 
@@ -27,7 +26,7 @@ identical rows and values may be returned even though the loop variable
    - ``ODB_DATAPATH_CCMA``  
    - ``ODB_IDXPATH_CCMA``
 
-   In the case of a ECMA database the following variabes have to be used 
+   The following variables have to be used in the case of an `ECMA` database.
 
    - ``ODB_SRCPATH_ECMA``   
    - ``ODB_DATAPATH_ECMA``
@@ -50,26 +49,21 @@ Recommended workflow:
    import os, sys
    from datetime import datetime
 
-   # Import odb4py utils
-   from  odb4py.utils    import  OdbEnv ,  OdbObject  ,  StringParser
-
-   # Init ODB env
-   env  =OdbEnv()
-   env.InitEnv ()
-
-   # Import ODB core 
-   from odb4py.core    import  odbConnect, odbClose , odbDca , odbDict
+   # Import odb4py 
+   from  odb4py.utils   import  OdbEnv ,  OdbObject  ,  StringParser
+   from  odb4py.core    import  odbConnect, odbClose , odbDca , odbDict
 
 
-   def Connect (db_path , db_name):
+
+   def Connect (db_path , db_name, ncpu ):
        iret  = odbConnect ( odbdir =db_path+"/"+db_name   )
        return iret
 
-   def CreateDca (db_path ,db_name ,  NCPU=4):
+   def CreateDca (db_path ,db_name ,  NCPU=ncpu  ):
        # Create DCA if not there
        if not os.path.isdir (dbpath+"/dca"):
-          id_=odbDca ( dbpath=db_path, db= db_name , ncpu=NCPU )
-       return id_
+          ic =odbDca ( dbpath=db_path, db= db_name , ncpu=NCPU )
+       return ic 
 
 
 
@@ -81,15 +75,20 @@ Recommended workflow:
        nfunctions=nfunc
        query_file= None
        pool      = None
-
-       rows =odbDict (database  = dbpath  ,
-                   sql_query = sql        ,
-                   nfunc     = nfunctions ,
-                   fmt_float = 10         ,
-                   pbar      = True       ,
-                   verbose   = False      ,
-                   queryfile = None       ,
-                   poolmask  = None  )
+       
+       # If the an error occurs while executing the query a RuntimeError Exception is raised !
+       try:
+          rows =odbDict (database  = dbpath    ,
+                        sql_query = sql        ,
+                        nfunc     = nfunctions ,
+                        fmt_float = 10         ,
+                        pbar      = True       ,
+                        verbose   = False      ,
+                        queryfile = None       ,
+                        poolmask  = None  )                     
+       except:
+          RuntimeError
+          print("Failed to get data from the ODB {}".format(dbpath) )
        return rows
 
 
@@ -98,8 +97,8 @@ Recommended workflow:
 
     # Path to ODB directories
     # e.g : /path/to/odb/YYYYMMDDHH/CCMA 
-    # Let's use the same ODB from MetCoOp domain
-    odb_loc  = "/home/micro/odb"
+    # Let's use the same ODBs from MetCoOp domain
+    odb_dir_location  = "/home/odb"
 
     # The SQL query
     sql_query="select statid,\
@@ -108,7 +107,7 @@ Recommended workflow:
           varno         ,\
           obsvalue      ,\
           fg_depar      ,\
-          an_depar      \
+          an_depar       \
           FROM  hdr, body"
 
     # Set date/time period (20240110 00h00 --> 20240112 21h00 )
@@ -120,7 +119,7 @@ Recommended workflow:
     h2= 21
     cycle_inc= 3
     dbname="CCMA"
-
+    ncpu_dca= 4
     for d in range(d1,  d2 +1 ):
        for h in  range( h1 , h2 +1 , cycle_inc ):
 
@@ -131,7 +130,7 @@ Recommended workflow:
           ddt=str(yy)+str(mm)+dd+hh
 
           # Set the path
-          dbpath = "/".join( (odb_loc , ddt , dbname)  )
+          dbpath = "/".join( (odb_dir_location  , ddt , dbname)  )
 
           # Reset the paths and IOASSIGN environnment variables for each iteration
           os.environ["ODB_SRCPATH_CCMA" ]=dbpath
@@ -140,16 +139,16 @@ Recommended workflow:
           os.environ["IOASSIGN"  ]       =dbpath+"/"+"IOASSIGN"
 
           # Connect
-          ic    = Connect( dbpath  ,dbname )
+          ic    = Connect  (dbpath ,dbname )
           
           # Create DCA 
-          i_dca = CreateDca(dbpath ,dbname )
+          i_dca = CreateDca(dbpath ,dbname , ncpu_dca )
 
           # Get the data
-          row_dict = FetchData  ( dbpath , sql_query )
+          row_dict = FetchData  (dbpath , sql_query)
 
           # Close the database 
-          odbClose(1)
+          odbClose()
 
     end = datetime.now()
     duration = end - start
