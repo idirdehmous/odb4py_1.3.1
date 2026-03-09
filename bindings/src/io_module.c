@@ -300,29 +300,24 @@ static PUBLIC   PyObject*   odbConnect_method ( PyObject *Py_UNUSED(self) , PyOb
 // Close the ODB 
 static PUBLIC PyObject* odbClose_method(PyObject *Py_UNUSED(self), PyObject *args)
 {
-    int handle;
-
+    int handle = 0;
     // handle mandatory 
     if (!PyArg_ParseTuple(args, "i", &handle)) {
         PyErr_SetString(PyExc_ValueError,
-            "--odb4py : odbClose(handle) expects an integer handle.");
+            "--odb4py : odbClose(handle) expects the value `1` as an argument.");
         return NULL;
     }
 
-    if (!free_handles || handle < 1 || handle > maxhandle) {
+    if (handle =! 1) { handle =1 ; }
+
+   if   (!free_handles || handle < 1 || handle > maxhandle)  {
         fprintf(stderr,
             "--odb4py : invalid handle %d\n", handle);
         return PyLong_FromLong(-1);
     }
 
+    
     DB_t *ph = &free_handles[handle - 1];
-
-    // already closed or invalid 
-    if (ph->h != handle) {
-        fprintf(stderr,
-            "--odb4py : handle %d not active\n", handle);
-        return PyLong_FromLong(-1);
-    }
 
     //
     DCA_free(handle);
@@ -338,11 +333,10 @@ static PUBLIC PyObject* odbClose_method(PyObject *Py_UNUSED(self), PyObject *arg
     if (ph->tblname && ph->ntables > 0) {
         for (int i = 0; i < ph->ntables; ++i)
             FREE(ph->tblname[i]);
-
         FREE(ph->tblname);
     }
 
-    // ---- reset structure 
+    // ---->> reset the structures 
     ph->srcpath  = NULL;
     ph->datapath = NULL;
     ph->idxpath  = NULL;
@@ -352,7 +346,7 @@ static PUBLIC PyObject* odbClose_method(PyObject *Py_UNUSED(self), PyObject *arg
     ph->npools   = 0;
     ph->h        = 0;
 
-    fprintf(stderr, BGRN  "--odb4py : database closed.\n");
+    fprintf(stderr,"--odb4py : database closed.\n");
 
     return PyLong_FromLong(0);
 }
