@@ -1,5 +1,4 @@
 #define PY_SSIZE_T_CLEAN
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #include <Python.h>
 #include <numpy/arrayobject.h>
@@ -336,7 +335,6 @@ PyDict_SetItemString(key_args, "sql_query", sql_obj);
 PyDict_SetItemString(key_args, "database", PyUnicode_FromString(database));
 PyDict_SetItemString(key_args, "nfunc",PyLong_FromLong(nfunc ));
 
-
 // Optional  args 
 // Format floats
 PyDict_SetItemString(key_args, "fmt_float",PyLong_FromLong(fmt_float));
@@ -356,7 +354,7 @@ PyDict_SetItemString(key_args, "verbose",  verbose ? Py_True : Py_False);
 // Create empty tuple as posional arguments 
 PyObject *args_call = PyTuple_New(0);
 
-PyObject *rows   = odbDict_method  ( NULL , args_call , key_args )  ;  
+PyObject *rows   = odb_dict_method  ( NULL , args_call , key_args )  ;  
 
 if (!rows ) {
     Py_DECREF(args_call);
