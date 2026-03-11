@@ -4,14 +4,15 @@
 #include <libgen.h>
 #include "netcdf.h"
 
+// Define Pi 
 #define PI 3.141592653589793
 #define RAD2DEG (180.0/PI)
+
 
 /* Handle errors by printing an error message and exiting with a
 * non-zero status. from   https://docs.unidata.ucar.edu/netcdf-c  */
 #define ERRCODE 2
 #define ERR(e) {printf("Error: %s\n", nc_strerror(e)); exit(ERRCODE);}
-
 
 
 
@@ -34,13 +35,6 @@ for (char *p = name; *p; p++){
     }
 }
 
-/*static void strip_table(char *name)
-{
-    char *p = strchr(name, '@');
-    if (p)
-        *p = '\0';
-}*/
-
 
 static void make_printable(char *s, int slen)
 {
@@ -51,17 +45,11 @@ static void make_printable(char *s, int slen)
     }
 }
 
-
-
-
 static int is_coord(const char *name)
 {
     if (!name) return 0;
     return (!strcmp(name,"lat")  || !strcmp(name,"lon")  || !strcmp(name,"latitude") || !strcmp(name,"longitude"));
 }
-
-
-
 
 
 static void convert_rad_to_deg(double *buffer,
@@ -167,8 +155,8 @@ size_t nc_var_size_bytes(int ncid, int varid)
     size_t dimlen;
     size_t nelems = 1;
 
-    int chack  ;  
-    chack=nc_inq_vartype(ncid, varid, &vartype);
+    int check  ;  
+    check=nc_inq_vartype(ncid, varid, &vartype);
        if (check != NC_NOERR) { ERR(check);    return -1;  }
     check=nc_inq_varndims(ncid, varid, &ndims);
        if (check != NC_NOERR) { ERR(check);    return -1;  }
