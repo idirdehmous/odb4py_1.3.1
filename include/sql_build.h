@@ -1,9 +1,11 @@
+#ifndef SQL_BUILDER_H
+#define SQL_BUILDER_H
+
+// Concat sql parts for geo_module.c  
 
 typedef struct {
     PyObject *parts;   // python SQL parts 
 } SQLBuilder;
-
-
 
 
 static int
@@ -41,8 +43,6 @@ static int sqlbuilder_add(SQLBuilder *b, const char *text)
     Py_DECREF(s);
     return rc;
 }
-
-
 
 static int
 sqlbuilder_addf(SQLBuilder *b, const char *fmt, ...)
@@ -97,3 +97,6 @@ static void sqlbuilder_free(SQLBuilder *b){
     Py_XDECREF(b->parts);
     PyMem_Free(b);
 }
+
+
+#endif
