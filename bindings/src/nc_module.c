@@ -17,12 +17,6 @@
 // Length of strings in ODB
 #define ODB_STRLEN 8  // 8 chars + '\0'
  
-/* Handle errors by printing an error message and exiting with a
-* non-zero status. from   https://docs.unidata.ucar.edu/netcdf-c  */
-#define ERRCODE 2
-#define ERR(e) {printf("Error: %s\n", nc_strerror(e)); exit(ERRCODE);}
-
-
 
 
 // Get the returned rows and encode into NetCDF 
