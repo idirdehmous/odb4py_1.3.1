@@ -26,7 +26,7 @@ class SqlParser:
 #  int ncols_nonassoc;     /* column variables needed to be prefetched due to formula(s) (kind=0) */
 #  int ncolaux;            /* Should be == ncols_true + ncols_aux */
 
-      def parse_tokens(self, raw):
+      def get_nfunc (self, raw):
           fcnt=[]
           od  =OdbLexic ()
           kws =od.odb_sqlwords()                     # ODB/SQL WORDS
