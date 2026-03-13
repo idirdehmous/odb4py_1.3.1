@@ -47,12 +47,12 @@
 
 
 /*    Destroy np Capsule   */
-static void free_when_done(PyObject *capsule) {
+/*static void free_when_done(PyObject *capsule) {
     void *ptr = PyCapsule_GetPointer(capsule, NULL);
     if (ptr) {
        free(ptr);
     }
-}
+}*/
 
 
 // Convert boolean PyObject  (from python True /False to C true/false)
