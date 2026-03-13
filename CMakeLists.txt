@@ -8,7 +8,7 @@ project     (odb4py  LANGUAGES C CXX)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Scikit-build provides Python variables
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module )
+find_package(Python3 REQUIRED COMPONENTS Interpreter  Development.Module )
 
 # Include ecmwf macros 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
