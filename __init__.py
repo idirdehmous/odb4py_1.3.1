@@ -4,7 +4,7 @@
 #
 # Licensed under the Apache License, Version 2.0
 
-__version__ = "1.1.2"
+__version__ = "1.3.1"
 
 # Ensure that the env is initialized whichever module is called !
 from .utils.setting_env import OdbEnv
