@@ -3,18 +3,21 @@
 #include <Python.h>
 #include "odb_types.h"
 #include "io_module.c"
-#include "dict_module.c"
+#include "dict_module.h"
 #include "dbarray_module.c"
 #include "dca_module.c"
+#include "geo_module.c"
 
 
 
-
+// little doc 
 PyDoc_STRVAR(open_doc      , "A C/python wrapper of the original ODBc_open method. Establish a connection to the ODB and initalize its paths and structures");
 PyDoc_STRVAR(close_doc     , "Closes a connection to an opened ODB");
 PyDoc_STRVAR(npar_doc      , "Fetch ODB rows as a numpy array with optional header containing column names." );
 PyDoc_STRVAR(dict_doc      , "Fetch ODB rows as a python  dictionnary where the column names are the keys and the values are lists of values.");
 PyDoc_STRVAR(dcaf_doc      , "Create DCA files (Direct Column  Access ).");
+PyDoc_STRVAR(geop_doc      , "Returns lat,lon ,pressure , altitude , date , time from ODB. Has the option  'sql_cond' to add additional SQL statement");
+PyDoc_STRVAR(dist_doc      , "Compute great circle distance between numpy lat/lon pairs. Optimized with Numpy C/API.");
 
 PyDoc_STRVAR(core_doc,"C/Python interface to access the ODB1 IFS/ARPEGE databases\nThe original source code has been developed by S.Saarinen et al\n***Copyright (c) 1997-98, 2000 ECMWF. All Rights Reserved !***");
 
@@ -26,6 +29,8 @@ static PyMethodDef ODBConnection_methods[] = {
     {"odb_dict"  , (PyCFunction) (void(*)(void))odb_dict_method,  METH_VARARGS | METH_KEYWORDS, dict_doc},
     {"odb_array" , (PyCFunction) (void(*)(void))odb_array_method,  METH_VARARGS | METH_KEYWORDS,npar_doc},
     {"odb_dca"   , (PyCFunction)(void(*)(void)) odb_dca_method, METH_VARARGS | METH_KEYWORDS,  dcaf_doc },
+    {"odb_geopoints", (PyCFunction)(void(*)(void)) odb_geopoints_method, METH_VARARGS | METH_KEYWORDS, geop_doc },
+    {"odb_gcdist",(PyCFunction)(void(*)(void)) odb_gcdist_method, METH_VARARGS | METH_KEYWORDS,  dist_doc },
     {NULL, NULL, 0, NULL}
 };
 
@@ -44,7 +49,7 @@ static void ODBConnection_dealloc(ODBConnection *self)
 // Init the Type 
 static  PyTypeObject ODBConnectionType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "odbIO.ODBConnection",       // Name
+    .tp_name = "odb.ODBConnection",       // Name
     .tp_basicsize = sizeof(ODBConnection),  // size 
     .tp_flags = Py_TPFLAGS_DEFAULT,         // other flags
     .tp_methods = ODBConnection_methods,     // ODBConnection  register 
