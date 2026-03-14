@@ -47,10 +47,15 @@ static int rows4nc(char *database,
     size_t prog_max = 0 ;
 
     int total_rows = getMaxrows(database, sql_query, poolmask);
+
     if (total_rows <= 0) {
         printf("--odb4py : ODB query returned zero rows\n");
         return -1;
     }
+
+   
+    if (total_rows <= 0) total_rows = 4096;   // Fallback
+    prog_max = (size_t)total_rows;
 
     h = odbdump_open(database, sql_query, NULL, NULL, NULL, &maxcols);
     if (!h || maxcols <= 0) {  printf("--odb4py : Failed to open ODB\n");
@@ -62,7 +67,6 @@ static int rows4nc(char *database,
         odbdump_close(h);
         return -1;
     }
-
     while ((nd = odbdump_nextrow(h, d, maxcols, &new_dataset)) > 0) {
         if (lpbar) {  
 	    ++ip;            
@@ -409,7 +413,11 @@ printf( "%s\n" ,  "List of written columns :"  ) ;
 
 // Close ncfile 
 check=nc_close(ncid);
-      if (check != NC_NOERR) { ERR(check);    return -1;  }          
+      if (check != NC_NOERR) { 
+	      ERR(check);    
+	      printf("--odb4py : Failed to write data into the NetCDF file")   ; 
+	      return -1;  
+      }          
     free(varids);
 
 //  if is here without issue so ...
@@ -481,6 +489,7 @@ static PyObject *odb2nc_method(PyObject *Py_UNUSED(self), PyObject *args, PyObje
         PyErr_SetString(PyExc_RuntimeError, "--odb4py : failed to get rows from ODB for NetCDF encoding");
         return PyLong_FromLong(-1);
     }
+
 
     //   Convert coordinates        
     //   If it's not in degrees , force conversion  
