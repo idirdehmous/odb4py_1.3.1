@@ -5,7 +5,7 @@
 Check connection object 
 """
 
-from odb4py import OdbObject
+from odb4py.utils import OdbObject
 
 # Import function
 from odb4py.core import odb_open
